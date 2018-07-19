@@ -1,5 +1,0 @@
-#!/usr/bin/env ruby
-require 'bundler/setup'
-require 'capistrano/docker'
-require 'irb'
-IRB.start(__FILE__)
