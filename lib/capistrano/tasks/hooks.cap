@@ -1,0 +1,10 @@
+before 'deploy:started', 'docker:check'
+before 'deploy:updated', 'docker:build_based'
+before 'deploy:updated', 'docker:build'
+before 'deploy:published', 'docker:respawn'
+before 'deploy:finished', 'bundler:clean'
+before 'deploy:finished', 'docker:clear'
+
+Capistrano::DSL.stages.each do |stage|
+  after stage, 'docker:map_bins'
+end

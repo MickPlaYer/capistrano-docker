@@ -1,0 +1,117 @@
+require 'capistrano/docker/helper'
+
+namespace :docker do
+  include Capistrano::Docker::Helper
+
+  desc 'Check docker is installed'
+  task :check do
+    on roles :app do
+      execute :docker, '--version'
+    end
+  end
+
+  desc 'Build base image'
+  task :build_based do
+    on roles :app do
+      dockerfile = release_path.join fetch :dockerfile_base
+      if test "[ -f #{dockerfile} ]"
+        execute :docker,
+                :build,
+                release_path,
+                "--tag #{fetch :docker_base_image}",
+                "--file #{dockerfile}"
+      else
+        info "No #{dockerfile}, just skipped"
+      end
+    end
+  end
+
+  desc 'Build docker image with tag and label'
+  task :build do
+    on roles :app do
+      upload_dockerfile!
+      revision = fetch(:current_revision) ||
+                 capture(:cat, release_path.join('REVISION'), '2>/dev/null')
+      image_tag = "#{fetch :docker_image}:#{revision}"
+      execute :docker,
+              :build,
+              release_path,
+              "--tag #{image_tag}",
+              "--label #{fetch :docker_filter_label}"
+    end
+  end
+
+  desc 'Start server with docker'
+  task :up do
+    on roles :app do
+      within current_path do
+        if current_containers.include? current_container
+          break info 'It\'s already up!'
+        end
+        publish = "--publish #{fetch :port}:#{fetch :docker_app_port}"
+        options = "--detach #{publish}"
+        set :current_docker_options, options
+        container = capture :rails, :server
+        set :current_docker_options, nil
+        if current_containers.include? container
+          write_container(container)
+        else
+          error 'Something wrong.'
+        end
+      end
+    end
+  end
+
+  desc 'Kill the docker server'
+  task :down do
+    on roles :app do
+      within current_path do
+        unless current_containers.include? current_container
+          break info 'It\'s already down!'
+        end
+        execute :docker, :kill, current_container
+        execute :rm, '-f', 'tmp/pids/server.pid'
+      end
+    end
+  end
+
+  desc 'Kill old docker server then start a new one'
+  task :respawn do
+    invoke 'docker:down'
+    invoke 'docker:up'
+  end
+
+  desc 'Clear docker images'
+  task :clear do
+    on roles :app do
+      filter = "--filter=label=#{fetch :docker_filter_label}"
+      format = '--format "{{.ID}}"'
+      images = capture :docker, :images, filter, format
+      images = images.split "\n"
+      keep_images = fetch :docker_keep_images
+      if images.size > keep_images
+        to_remove_images = images.last(images.size - keep_images)
+        execute :docker, :image, :rm, *to_remove_images
+      end
+      execute :docker, :container, :prune, '--force'
+      execute :docker, :image, :prune, '--force'
+    end
+  end
+
+  task :map_bins do
+    on roles :app do
+      target = release_path.join 'REVISION'
+      revision = capture :cat, target
+      set :docker_revision, revision if test "[ -f #{target} ]"
+    end
+    docker_run = proc do
+      revision = fetch(:current_revision) || fetch(:docker_revision)
+      options = fetch :current_docker_options
+      image_tag = "#{fetch :docker_image}:#{revision}"
+      "docker run --rm #{volumes.join ' '} #{options} #{image_tag}"
+    end
+    fetch(:docker_bins).each do |command|
+      SSHKit.config.command_map.prefix[command.to_sym].unshift(docker_run)
+    end
+  end
+end

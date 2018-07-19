@@ -1,7 +1,2 @@
-require 'capistrano/docker/version'
-
-module Capistrano
-  module Docker
-    # Your code goes here...
-  end
-end
+require_relative 'docker/tasks'
+require_relative 'docker/hooks'

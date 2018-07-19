@@ -1,0 +1,17 @@
+FROM <%= fetch(:docker_base_image) %>
+
+ENV LANG=zh_TW.UTF-8 \
+    TZ=Asia/Taipei \
+    RACK_ENV=production \
+    RAILS_ENV=production \
+    RAILS_SERVE_STATIC_FILES=true \
+    APP_PATH=<%= fetch(:docker_app_path) %> \
+    PORT=<%= fetch(:docker_app_port) %>
+
+WORKDIR $APP_PATH
+
+COPY . .
+
+EXPOSE $PORT
+
+CMD ["/bin/sh", "-c", "${APP_PATH}/bin/rails server"]
