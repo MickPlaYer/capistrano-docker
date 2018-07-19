@@ -10,7 +10,7 @@ Add this line to your application's Gemfile:
 
 ```ruby
 group :development do
-  gem 'capistrano-docker', require: false
+  gem 'capistrano-docker', require: false, github: 'MickPlaYer/capistrano-docker'
 end
 
 ```
