@@ -38,6 +38,7 @@ set :docker_app_path, '/usr/app'
 set :docker_app_port, 80
 set :docker_base_image, -> { "#{fetch(:application)}:base" }
 set :docker_bins, %w[bundle gem rake rails]
+set :docker_up_options, ''
 set :docker_filter_label, -> { "app-name=#{fetch(:application)}" }
 set :docker_image, -> { fetch(:application) }
 set :docker_keep_images, 2

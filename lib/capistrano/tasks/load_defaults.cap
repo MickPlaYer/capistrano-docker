@@ -7,6 +7,7 @@ namespace :load do
     set :docker_filter_label, -> { "app-name=#{fetch(:application)}" }
     set :docker_image, -> { fetch(:application) }
     set :docker_keep_images, 2
+    set :docker_up_options, ''
     set :dockerfile_base, 'Dockerfile.base'
     set :dockerfile_template,
         File.expand_path('../templates/Dockerfile.erb', __dir__)
