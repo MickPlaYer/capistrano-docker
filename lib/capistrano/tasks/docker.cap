@@ -48,9 +48,10 @@ namespace :docker do
         if current_containers.include? current_container
           break info 'It\'s already up!'
         end
+        name = "--name #{fetch :docker_container_name}"
         publish = "--publish #{fetch :port}:#{fetch :docker_app_port}"
         custom_options = fetch :docker_up_options
-        options = "--detach #{publish} #{custom_options}"
+        options = "--detach #{name} #{publish} #{custom_options}"
         set :current_docker_options, options
         container = capture :rails, :server
         set :current_docker_options, nil
